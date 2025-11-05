@@ -1,5 +1,5 @@
 [package]
-name = "hello"
+name = "rosh"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,6 +7,9 @@ edition = "2024"
 bootloader = "0.9"
 spin = "0.5.2"
 volatile = "0.2.6"
+x86_64 = "0.14.2"
+pic8259 = "0.10.1"
+pc-keyboard = "0.7.0"
 
 [profile.dev]
 panic = "abort"
