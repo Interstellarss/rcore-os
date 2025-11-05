@@ -2,52 +2,48 @@
 #![no_main]
 
 
-// #![feature(custom_test_frameworks)]
-// #![test_runner(crate::test_runner)]
-//mod vga_buffer;
 use core::panic::PanicInfo;
 use rosh::println;
-// use vga_buffer::Writer;
-// use vga_buffer::Color;
-// use vga_buffer::ColorCode;
-//use crate::vga_buffer::Buffer;
-
-// static HELLO: &[u8] = b"Hello World!";
-
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    println!("{}", _info);
-    rosh::hlt_loop();
-}
+use bootloader::{BootInfo, entry_point};
+use x86_64::structures::paging::Page;
 
 
+entry_point!(kernel_main);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
-    // let vga_buffer = 0xb8000 as *mut u8;
+//#[unsafe(no_mangle)]
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
-    // let mut writer = Writer{
-    //     cur_row : 0,
-    //     cur_col : 0,
-    //     color_code : ColorCode::new(Color::Yellow, Color::Black),
-    //     buffer : unsafe { &mut *( 0xb8000 as *mut Buffer) },
-    // };
-    // use core::fmt::Write;
-    // vga_buffer::WRITER.lock().write_string("Hello again");
-
-    // write!(vga_buffer::WRITER.lock(), ", some numbers: {} {}", 42, 1.337);
+    use rosh::memory::{self, BootInfoFrameAllocator};
+    use x86_64::{structures::paging::Translate, VirtAddr};
+    //use rosh::memory::translate_addr;
+    
     println!("Hello World{}", "!");
 
     rosh::init();
 
-    //x86_64::instructions::interrupts::int3();
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    
+    // init a mapper
+    let mut mapper = unsafe {memory::init(phys_mem_offset)};
+    let mut frame_allocator = unsafe {BootInfoFrameAllocator::init(&boot_info.memory_map)};
 
-    // unsafe {
-    //     *(0xdeadbeef as *mut u8) = 42;
-    // }
+    // map an unused page
+    let page = Page::containing_address(VirtAddr::new(0xdeadbeaf000));
+    memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
+
+    // write the string `New!` to the screen through the new mapping
+    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
+    unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e) };
+
 
     println!("It did not crash!");
 
+    rosh::hlt_loop();
+}
+
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    println!("{}", _info);
     rosh::hlt_loop();
 }
 

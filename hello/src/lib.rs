@@ -3,8 +3,8 @@
 
 pub mod interrupts;
 pub mod vga_buffer;
-
 pub mod gdt;
+pub mod memory;
 
 pub fn init(){
     gdt::init();
@@ -18,3 +18,5 @@ pub fn hlt_loop() -> ! {
         x86_64::instructions::hlt();
     }
 }
+
+
